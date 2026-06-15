@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Party Game</title>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);
+color:white;
+text-align:center;
+}
+
+.screen{
+display:none;
+padding:20px;
+}
+
+.active{display:block;}
+
+.card{
+margin:20px auto;
+padding:30px;
+border-radius:20px;
+max-width:400px;
+font-size:22px;
+font-weight:bold;
+box-shadow:0 0 20px rgba(0,0,0,0.5);
+}
+
+.easy{background:#ffb6c1;color:black;}
+.medium{background:#ffe066;color:black;}
+.hard{background:#7a001f;color:white;}
+
+button{
+padding:15px;
+margin:10px;
+border:none;
+border-radius:15px;
+font-size:18px;
+cursor:pointer;
+width:80%;
+}
+
+.start{background:#00e676;}
+.draw{background:#2979ff;color:white;}
+.done{background:#00c853;color:white;}
+.veto{background:#ff1744;color:white;}
+
+input,select{
+padding:10px;
+margin:5px;
+width:80%;
+border-radius:10px;
+border:none;
+}
+
+.title{
+font-size:28px;
+margin-top:20px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- SETUP -->
+<div id="setup" class="screen active">
+<div class="title">🎉 Party Game</div>
+
+<div id="players"></div>
+
+<button class="start" onclick="startGame()">התחל משחק</button>
+</div>
+
+<!-- GAME -->
+<div id="game" class="screen">
+<h2 id="turn"></h2>
+
+<button class="draw" onclick="draw()">🎲 שלוף משימה</button>
+
+<div id="card" class="card" style="display:none;"></div>
+
+<div id="actions" style="display:none;">
+<button class="done" onclick="done()">🟢 ביצעתי</button>
+<button class="veto" onclick="veto()">🔴 וטו</button>
+</div>
+</div>
+
+<script>
+
+let players=[];
+let current=0;
+let taskData=null;
+
+for(let i=0;i<4;i++){
+document.getElementById("players").innerHTML+=`
+<input id="p${i}" placeholder="שם שחקן ${i+1}">
+<select id="g${i}">
+<option value="male">בן</option>
+<option value="female">בת</option>
+</select>
+`;
+}
+
+function startGame(){
+players=[];
+
+for(let i=0;i<4;i++){
+players.push({
+name:document.getElementById("p"+i).value||("שחקן"+(i+1)),
+gender:document.getElementById("g"+i).value
+});
+}
+
+document.getElementById("setup").classList.remove("active");
+document.getElementById("game").classList.add("active");
+
+updateTurn();
+}
+
+function updateTurn(){
+document.getElementById("turn").innerText=
+"🎯 התור של " + players[current].name;
+}
+
+function getTasks(){
+return JSON.parse(localStorage.getItem("tasks")||"{}");
+}
+
+function parseTask(text){
+
+let p=players[current];
+let males=players.filter(x=>x.gender==="male");
+let females=players.filter(x=>x.gender==="female");
+
+function r(arr){return arr[Math.floor(Math.random()*arr.length)]?.name||"";}
+
+return text
+.replaceAll("{current}",p.name)
+.replaceAll("{random}",players[Math.floor(Math.random()*players.length)].name)
+.replaceAll("{male}",r(males))
+.replaceAll("{female}",r(females))
+.replaceAll("{all_males}",males.map(x=>x.name).join(", "))
+.replaceAll("{all_females}",females.map(x=>x.name).join(", "));
+}
+
+function draw(){
+let tasks=getTasks();
+let cats=["easy","medium","hard"];
+let cat=cats[Math.floor(Math.random()*3)];
+
+let list=tasks[cat]||[];
+let raw=list[Math.floor(Math.random()*list.length)];
+
+if(!raw){alert("אין משימות");return;}
+
+taskData={text:raw,cat:cat};
+
+let card=document.getElementById("card");
+card.style.display="block";
+card.className="card "+cat;
+card.innerText=parseTask(raw);
+
+document.getElementById("actions").style.display="block";
+}
+
+function done(){
+next();
+}
+
+function veto(){
+if(taskData.cat==="hard") alert("🥃🥃 שני שוטים");
+else alert("🥃 שוט אחד");
+next();
+}
+
+function next(){
+current++;
+if(current>=players.length) current=0;
+updateTurn();
+
+document.getElementById("card").style.display="none";
+document.getElementById("actions").style.display="none";
+}
+
+</script>
+
+</body>
+</html>
