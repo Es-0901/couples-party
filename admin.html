@@ -2,22 +2,11 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>Admin Panel</title>
+<title>Admin</title>
 
 <style>
-body{
-font-family:Arial;
-background:#111;
-color:white;
-padding:20px;
-}
-
-.section{
-padding:15px;
-margin-bottom:20px;
-border-radius:15px;
-}
-
+body{font-family:Arial;background:#111;color:white;padding:20px;}
+.section{margin-bottom:20px;padding:10px;border-radius:10px;}
 .easy{background:#ffb6c1;color:black;}
 .medium{background:#ffe066;color:black;}
 .hard{background:#7a001f;color:white;}
@@ -32,37 +21,52 @@ padding:10px;
 }
 
 button{
+width:100%;
 padding:15px;
 border:none;
 border-radius:10px;
 background:#00e676;
 font-size:18px;
-cursor:pointer;
-width:100%;
 }
 </style>
 </head>
 
 <body>
 
-<h1>⚙️ אדמין - משימות</h1>
+<h2>⚙️ אדמין</h2>
 
-<div class="section easy"><h2>קל</h2><div id="easy"></div></div>
-<div class="section medium"><h2>בינוני</h2><div id="medium"></div></div>
-<div class="section hard"><h2>קשה</h2><div id="hard"></div></div>
+<div class="section easy"><h3>קל</h3><div id="easy"></div></div>
+<div class="section medium"><h3>בינוני</h3><div id="medium"></div></div>
+<div class="section hard"><h3>קשה</h3><div id="hard"></div></div>
 
-<button onclick="save()">שמור</button>
+<button onclick="save()">שמור לענן</button>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <script>
 
-["easy","medium","hard"].forEach(cat=>{
+const firebaseConfig = {
+  apiKey: "XXX",
+  authDomain: "XXX",
+  projectId: "XXX",
+  storageBucket: "XXX",
+  messagingSenderId: "XXX",
+  appId: "XXX"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+["easy","medium","hard"].forEach(c=>{
 for(let i=0;i<10;i++){
-document.getElementById(cat).innerHTML+=
-`<textarea id="${cat}${i}" placeholder="{current} / {random} / {male} / {female}"></textarea>`;
+document.getElementById(c).innerHTML+=
+`<textarea id="${c}${i}"></textarea>`;
 }
 });
 
-function save(){
+async function save(){
+
 let data={easy:[],medium:[],hard:[]};
 
 for(let c of ["easy","medium","hard"]){
@@ -71,8 +75,10 @@ data[c].push(document.getElementById(c+i).value);
 }
 }
 
-localStorage.setItem("tasks",JSON.stringify(data));
-alert("נשמר!");
+// 🔥 שמירה לענן
+await db.collection("game").doc("tasks").set(data);
+
+alert("נשמר בענן ☁️");
 }
 
 </script>
