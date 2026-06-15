@@ -14,11 +14,7 @@ color:white;
 text-align:center;
 }
 
-.screen{
-display:none;
-padding:20px;
-}
-
+.screen{display:none;padding:20px;}
 .active{display:block;}
 
 .card{
@@ -28,7 +24,6 @@ border-radius:20px;
 max-width:400px;
 font-size:22px;
 font-weight:bold;
-box-shadow:0 0 20px rgba(0,0,0,0.5);
 }
 
 .easy{background:#ffb6c1;color:black;}
@@ -41,8 +36,8 @@ margin:10px;
 border:none;
 border-radius:15px;
 font-size:18px;
-cursor:pointer;
 width:80%;
+cursor:pointer;
 }
 
 .start{background:#00e676;}
@@ -57,45 +52,54 @@ width:80%;
 border-radius:10px;
 border:none;
 }
-
-.title{
-font-size:28px;
-margin-top:20px;
-}
 </style>
 </head>
 
 <body>
 
-<!-- SETUP -->
 <div id="setup" class="screen active">
-<div class="title">🎉 Party Game</div>
-
+<h2>🎉 Party Game</h2>
 <div id="players"></div>
-
-<button class="start" onclick="startGame()">התחל משחק</button>
+<button class="start" onclick="startGame()">התחל</button>
 </div>
 
-<!-- GAME -->
 <div id="game" class="screen">
 <h2 id="turn"></h2>
 
-<button class="draw" onclick="draw()">🎲 שלוף משימה</button>
+<button class="draw" onclick="draw()">🎲 שלוף</button>
 
 <div id="card" class="card" style="display:none;"></div>
 
 <div id="actions" style="display:none;">
-<button class="done" onclick="done()">🟢 ביצעתי</button>
-<button class="veto" onclick="veto()">🔴 וטו</button>
+<button class="done" onclick="done()">בוצע</button>
+<button class="veto" onclick="veto()">וטו</button>
 </div>
 </div>
 
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
 <script>
+
+// 🔴 שים פה את ה-config שלך מ-Firebase
+const firebaseConfig = {
+  apiKey: "XXX",
+  authDomain: "XXX",
+  projectId: "XXX",
+  storageBucket: "XXX",
+  messagingSenderId: "XXX",
+  appId: "XXX"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
 let players=[];
 let current=0;
 let taskData=null;
 
+// יצירת שחקנים
 for(let i=0;i<4;i++){
 document.getElementById("players").innerHTML+=`
 <input id="p${i}" placeholder="שם שחקן ${i+1}">
@@ -108,10 +112,9 @@ document.getElementById("players").innerHTML+=`
 
 function startGame(){
 players=[];
-
 for(let i=0;i<4;i++){
 players.push({
-name:document.getElementById("p"+i).value||("שחקן"+(i+1)),
+name:document.getElementById("p"+i).value||"שחקן"+(i+1),
 gender:document.getElementById("g"+i).value
 });
 }
@@ -123,21 +126,22 @@ updateTurn();
 }
 
 function updateTurn(){
-document.getElementById("turn").innerText=
+document.getElementById("turn").innerText =
 "🎯 התור של " + players[current].name;
 }
 
-function getTasks(){
-return JSON.parse(localStorage.getItem("tasks")||"{}");
+// 🔥 קריאה מהענן
+async function getTasks(){
+let doc = await db.collection("game").doc("tasks").get();
+return doc.exists ? doc.data() : {};
 }
 
-function parseTask(text){
+function parse(text){
+let p = players[current];
+let males = players.filter(x=>x.gender==="male");
+let females = players.filter(x=>x.gender==="female");
 
-let p=players[current];
-let males=players.filter(x=>x.gender==="male");
-let females=players.filter(x=>x.gender==="female");
-
-function r(arr){return arr[Math.floor(Math.random()*arr.length)]?.name||"";}
+let r = arr => arr[Math.floor(Math.random()*arr.length)]?.name || "";
 
 return text
 .replaceAll("{current}",p.name)
@@ -148,13 +152,14 @@ return text
 .replaceAll("{all_females}",females.map(x=>x.name).join(", "));
 }
 
-function draw(){
-let tasks=getTasks();
-let cats=["easy","medium","hard"];
-let cat=cats[Math.floor(Math.random()*3)];
+async function draw(){
+let tasks = await getTasks();
 
-let list=tasks[cat]||[];
-let raw=list[Math.floor(Math.random()*list.length)];
+let cats=["easy","medium","hard"];
+let cat=cats[Math.floor(Math.random()*cats.length)];
+
+let list = tasks[cat] || [];
+let raw = list[Math.floor(Math.random()*list.length)];
 
 if(!raw){alert("אין משימות");return;}
 
@@ -163,7 +168,7 @@ taskData={text:raw,cat:cat};
 let card=document.getElementById("card");
 card.style.display="block";
 card.className="card "+cat;
-card.innerText=parseTask(raw);
+card.innerText=parse(raw);
 
 document.getElementById("actions").style.display="block";
 }
@@ -181,8 +186,8 @@ next();
 function next(){
 current++;
 if(current>=players.length) current=0;
-updateTurn();
 
+updateTurn();
 document.getElementById("card").style.display="none";
 document.getElementById("actions").style.display="none";
 }
